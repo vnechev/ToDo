@@ -10,10 +10,14 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
     
-    let itemsArray = ["Buy eggs", "Go to cinema", "Make a great app"]
+    var itemsArray = ["Buy eggs", "Go to cinema", "Make a great app"]
+    let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        if let items = defaults.array(forKey: "ItemsArray") as? [String]  {
+            itemsArray = items
+        }
 
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
@@ -101,5 +105,26 @@ class ToDoListViewController: UITableViewController {
         // Pass the selected object to the new view controller.
     }
     */
-
+    
+    //MARK: Add new item
+    
+    @IBAction func addNewItemBtnPressed(_ sender: UIBarButtonItem) {
+        var textField = UITextField()
+        
+        let alert = UIAlertController(title: "Add new To Do Item", message:"" , preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Add item", style: .default) { (action) in
+            if let text = textField.text{
+                self.itemsArray.append(text)}
+            self.defaults.set(self.itemsArray, forKey: "ItemsArray")
+            self.tableView.reloadData()
+            }
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Add new To Do item"
+            textField = alertTextField
+        }
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
+    }
+    
 }

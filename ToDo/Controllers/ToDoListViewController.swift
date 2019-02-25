@@ -10,15 +10,16 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
     
-    var itemsArray = ["Buy eggs", "Go to cinema", "Make a great app"]
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    var itemsArray = [Item]()
+    
+   
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        if let items = defaults.array(forKey: "ItemsArray") as? [String]  {
-            itemsArray = items
-        }
-
+        
+        loadItems()
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
 
@@ -41,9 +42,12 @@ class ToDoListViewController: UITableViewController {
    
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-
+        
+        let item = itemsArray[indexPath.row]
         // Configure the cell...
-        cell.textLabel?.text = itemsArray[indexPath.row]
+        cell.textLabel?.text = item.title
+        
+        cell.accessoryType = item.isDone ? .checkmark : .none
 
         return cell
     }
@@ -57,15 +61,9 @@ class ToDoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-       let selectedCell = tableView.cellForRow(at: indexPath)
        
-        
-        if selectedCell?.accessoryType == .checkmark {
-            selectedCell?.accessoryType = .none
-        } else {
-             selectedCell?.accessoryType = .checkmark
-        }
-        
+        itemsArray[indexPath.row].isDone = !itemsArray[indexPath.row].isDone
+        self.saveItems()
         tableView.deselectRow(at: indexPath, animated: true)
     }
 
@@ -115,9 +113,9 @@ class ToDoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add item", style: .default) { (action) in
             if let text = textField.text{
-                self.itemsArray.append(text)}
-            self.defaults.set(self.itemsArray, forKey: "ItemsArray")
-            self.tableView.reloadData()
+                let newItem = Item(title: text, isDone: false)
+                self.itemsArray.append(newItem)}
+                self.saveItems()
             }
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Add new To Do item"
@@ -127,4 +125,25 @@ class ToDoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    func saveItems()  {
+        let encoder = PropertyListEncoder()
+        do {let data = try encoder.encode(itemsArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array: \(error)")
+        }
+        
+        self.tableView.reloadData()
+    }
+    
+    func loadItems(){
+        if  let data = try? Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do{
+                itemsArray =  try decoder.decode([Item].self, from: data)}
+            catch {
+                print("Error decoding: \(error)")
+            }
+        }
+    }
 }
